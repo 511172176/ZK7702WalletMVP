@@ -14,5 +14,5 @@ Minimal wallet prototype using ZK + EIP-7702.
 3. Open `frontend/index.html` in browser
 4. Enter leaf value, click Submit to send EIP-7702 tx
 
-##ZK
+## ZK
 1. `circom circuits/isWhitelisted.circom --r1cs --wasm --sym -o build`
