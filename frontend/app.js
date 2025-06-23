@@ -1,53 +1,49 @@
 async function submitTx() {
   console.log("🔍 submitTx 被呼叫");
 
-  const response = await fetch("../proof/proof.json");
-  const proofJson = await response.json();
-  const proof = ethers.utils.arrayify(proofJson.proof);
-
-  const signalsRes = await fetch("../proof/public.json");
-  const pubSignalsRaw = await signalsRes.json();
-  const pubSignals = pubSignalsRaw.map(x => ethers.BigNumber.from(x).toString());
+  const rawProof = await fetch("../proof.json").then(res => res.json());
+  const publicInputs = await fetch("../public.json").then(res => res.json());
 
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   const signer = provider.getSigner();
 
-  const validatorAddress = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"; // 替換成你的合約地址
+  const validatorAddress = "0x68B1D87F95878fE05B998F19b66F4baba5De1aed";
   const validatorAbi = [
     {
+      name: "verifyAndSend",
+      type: "function",
+      stateMutability: "payable",
       inputs: [
-        { internalType: "bytes", name: "proof", type: "bytes" },
-        { internalType: "uint256[]", name: "pubSignals", type: "uint256[]" }
+        { name: "_pA", type: "uint256[2]" },
+        { name: "_pB", type: "uint256[2][2]" },
+        { name: "_pC", type: "uint256[2]" },
+        { name: "_pubSignals", type: "uint256[1]" }
       ],
-      name: "validateUserOp",
-      outputs: [
-        { internalType: "bool", name: "", type: "bool" }
-      ],
-      stateMutability: "view",
-      type: "function"
+      outputs: []
     }
   ];
 
   const validator = new ethers.Contract(validatorAddress, validatorAbi, signer);
 
   try {
-    const isValid = await validator.validateUserOp(proof, pubSignals);
-    if (isValid) {
-      alert("✅ 驗證通過，可執行交易");
+    const a = [rawProof.pi_a[0], rawProof.pi_a[1]];
+    const b = [
+      [rawProof.pi_b[0][1], rawProof.pi_b[0][0]],
+      [rawProof.pi_b[1][1], rawProof.pi_b[1][0]]
+    ];
+    const c = [rawProof.pi_c[0], rawProof.pi_c[1]];
+    const input = publicInputs;
 
-      const tx = await signer.sendTransaction({
-        to: "0x000000000000000000000000000000000000dEaD",
-        value: ethers.utils.parseEther("0.01")
-      });
+    const tx = await validator.verifyAndSend(a, b, c, input, {
+      value: ethers.utils.parseEther("0.01")
+    });
 
-      await tx.wait();
-      alert("🚀 交易已送出 (0.01 ETH → 0x...dead)");
-    } else {
-      alert("❌ 驗證失敗，交易中止");
-    }
+    await tx.wait();
+    alert("🚀 交易已送出 (0.01 ETH → 0x...dead)");
+
   } catch (err) {
-    console.error("呼叫驗證時發生錯誤:", err);
+    console.error("❌ 驗證或交易失敗:", err);
     alert("❌ 發生錯誤，請查看 console log");
   }
 }

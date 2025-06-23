@@ -1,20 +1,20 @@
-const fs = require('fs');
+const snarkjs = require("snarkjs");
+const fs = require("fs");
 
-function generateMockProof(leaf) {
-  return {
-    proof: "0x11223344556677889900aabbccddeeff00112233445566778899aabbccddeeff",
-    publicSignals: [
-      "123456789",
-      "98765432109876543210"
-    ]
-  };
+async function main() {
+  const input = JSON.parse(fs.readFileSync("proof/input.json"));
+
+  const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+    input,
+    "build/isWhitelisted_js/isWhitelisted.wasm",
+    "build/circuit_final.zkey"
+  );
+
+  const calldata = await snarkjs.groth16.exportSolidityCallData(proof, publicSignals);
+  const [a, b, c, inputSignals] = JSON.parse("[" + calldata + "]");
+
+  fs.writeFileSync("proof/proof.json", JSON.stringify({ a, b, c }, null, 2));
+  fs.writeFileSync("proof/public.json", JSON.stringify(inputSignals, null, 2));
 }
 
-const leaf = process.argv[2] || "0xabc123";
-const { proof, publicSignals } = generateMockProof(leaf);
-
-if (!fs.existsSync('proof')) fs.mkdirSync('proof');
-fs.writeFileSync('proof/proof.json', JSON.stringify(proof, null, 2));
-fs.writeFileSync('proof/public.json', JSON.stringify(publicSignals, null, 2));
-
-console.log('✅ Mock ZK proof generated');
+main();
