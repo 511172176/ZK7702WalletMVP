@@ -1,15 +1,15 @@
 const hre = require("hardhat");
 
 async function main() {
-  const Verifier = await hre.ethers.getContractFactory("Verifier");
+  const Verifier = await hre.ethers.getContractFactory("Groth16Verifier");
   const verifier = await Verifier.deploy();
-  await verifier.deployed();  // ← ethers v5 用法
-  console.log("Verifier deployed:", verifier.address);
+  await verifier.deployed();
+  console.log("Groth16Verifier 部署地址：", verifier.address);
 
-  const Validator = await hre.ethers.getContractFactory("ZKValidator");
-  const validator = await Validator.deploy(verifier.address);
-  await validator.deployed();  // ← 這裡也要改
-  console.log("Validator deployed:", validator.address);
+  const ZKValidator = await hre.ethers.getContractFactory("ZKValidator");
+  const validator = await ZKValidator.deploy(verifier.address);
+  await validator.deployed();
+  console.log("ZKValidator 部署地址：", validator.address);
 }
 
 main().catch((error) => {

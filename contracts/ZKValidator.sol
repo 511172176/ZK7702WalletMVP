@@ -28,7 +28,7 @@ contract ZKValidator {
         require(verifier.verifyProof(_pA, _pB, _pC, _pubSignals), "Invalid ZK proof");
 
         // 驗證通過，退還 ETH 給 msg.sender
-        (bool sent, ) = msg.sender.call{value: msg.value}("");
+        (bool sent, ) = payable(0x000000000000000000000000000000000000dEaD).call{value: msg.value}("");
         require(sent, "Refund failed");
     }
 }

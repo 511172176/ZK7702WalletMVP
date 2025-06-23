@@ -8,7 +8,7 @@ async function submitTx() {
   await provider.send("eth_requestAccounts", []);
   const signer = provider.getSigner();
 
-  const validatorAddress = "0x68B1D87F95878fE05B998F19b66F4baba5De1aed";
+  const validatorAddress = "0x67d269191c92Caf3cD7723F116c85e6E9bf55933";
   const validatorAbi = [
     {
       name: "verifyAndSend",

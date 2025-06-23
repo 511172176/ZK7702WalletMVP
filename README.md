@@ -9,7 +9,7 @@ Minimal wallet prototype using ZK + EIP-7702.
 4. `npx hardhat node`
 
 ## Workflow
-1. `npx hardhat run scripts/deployValidator.js --network sepolia`
+1. `npx hardhat run scripts/deployValidator.js --network localhost`
 2. `node scripts/generateProof.js <leaf>`
 3. Open `frontend/index.html` in browser
 4. Enter leaf value, click Submit to send EIP-7702 tx
@@ -41,3 +41,6 @@ Merkle Tree ![alt text](image.png)
 20	depth = 5
 32	depth = 5
 33 ~ 64	depth = 6
+
+`npx hardhat console --network localhost`
+`await ethers.provider.getBalance("0x000000000000000000000000000000000000dEaD")`
