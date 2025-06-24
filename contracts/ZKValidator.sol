@@ -2,33 +2,46 @@
 pragma solidity ^0.8.20;
 
 import "./Verifier.sol";
+import "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
+import "./interfaces/UserOperation.sol";
 
-/// @title ZK 驗證器 + 轉帳示例
-/// @notice 使用 Groth16Verifier.verifyProof 驗證 ZK proof，通過後退還 msg.value
 contract ZKValidator {
     Groth16Verifier public verifier;
 
-    /// @param _verifier Groth16Verifier 合約地址
     constructor(address _verifier) {
         verifier = Groth16Verifier(_verifier);
     }
 
-    /// @notice 驗證 ZK proof，通過後退還 msg.value
-    /// @param _pA Proof 的 A 部分，uint[2]
-    /// @param _pB Proof 的 B 部分，uint[2][2]
-    /// @param _pC Proof 的 C 部分，uint[2]
-    /// @param _pubSignals 公共信號，uint[1]
-    function verifyAndSend(
-        uint[2] calldata _pA,
-        uint[2][2] calldata _pB,
-        uint[2] calldata _pC,
-        uint[1] calldata _pubSignals
-    ) external payable {
-        // 調用 Groth16Verifier 的 verifyProof
-        require(verifier.verifyProof(_pA, _pB, _pC, _pubSignals), "Invalid ZK proof");
+    /// @dev 支援 ERC-4337 的驗證函數
+    function validateUserOp(
+        UserOperation calldata userOp,
+        bytes32, // userOpHash
+        uint256 // missingAccountFunds
+    ) external returns (uint256 validationData) {
+        (
+            uint256[2] memory _pA,
+            uint256[2][2] memory _pB,
+            uint256[2] memory _pC,
+            uint256[1] memory _pubSignals
+        ) = abi.decode(userOp.signature, (uint256[2], uint256[2][2], uint256[2], uint256[1]));
 
-        // 驗證通過，退還 ETH 給 msg.sender
-        (bool sent, ) = payable(0x000000000000000000000000000000000000dEaD).call{value: msg.value}("");
-        require(sent, "Refund failed");
+        bool ok = verifier.verifyProof(_pA, _pB, _pC, _pubSignals);
+        require(ok, "Invalid ZK proof");
+
+        return 0; // 0 = valid
     }
+
+    /// @dev 給 ZK 驗證通過後執行 call 的方式
+    function execute(bytes calldata callData) external {
+        (address to, uint256 value, bytes memory data) = abi.decode(callData, (address, uint256, bytes));
+        (bool success, bytes memory returndata) = to.call{value: value}(data);
+        if (!success) {
+            assembly {
+                revert(add(returndata, 32), mload(returndata))
+            }
+        }
+    }
+
+
+    receive() external payable {}
 }

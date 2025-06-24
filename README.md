@@ -44,3 +44,13 @@ Merkle Tree ![alt text](image.png)
 
 `npx hardhat console --network localhost`
 `await ethers.provider.getBalance("0x000000000000000000000000000000000000dEaD")`
+
+## EIP-7702
+### Bundle
+https://github.com/eth-infinitism/account-abstraction/tree/develop
+1. `git clone https://github.com/eth-infinitism/bundler.git`
+2. `cd bundler`
+3. `yarn install`
+4. `yarn preprocess`
+5. `$env:TS_NODE_TRANSPILE_ONLY=1`
+6. `npx ts-node packages/bundler/src/exec.ts --config packages/bundler/localconfig/bundler.config.json --unsafe`
