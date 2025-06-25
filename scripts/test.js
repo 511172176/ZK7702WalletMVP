@@ -1,3 +1,4 @@
+// scripts/testValidatorProof.js
 const fs = require("fs");
 const { ethers } = require("hardhat");
 
@@ -5,15 +6,9 @@ async function main() {
   const proof = JSON.parse(fs.readFileSync("proof.json"));
   const publicSignals = JSON.parse(fs.readFileSync("public.json"));
 
-  const Groth16Verifier = await ethers.getContractFactory("Groth16Verifier");
-  const verifier = await Groth16Verifier.deploy();
-  await verifier.deployed();
-  console.log("Groth16Verifier 部署地址：", verifier.address);
+  const { validator: VALIDATOR_ADDR } = JSON.parse(fs.readFileSync("deployed.json"));
 
-  const ZKValidator = await ethers.getContractFactory("ZKValidator");
-  const zkValidator = await ZKValidator.deploy(verifier.address);
-  await zkValidator.deployed();
-  console.log("ZKValidator 部署地址：", zkValidator.address);
+  const ZKValidator = await ethers.getContractAt("ZKValidator", VALIDATOR_ADDR);
 
   const a = [proof.pi_a[0], proof.pi_a[1]];
   const b = [
@@ -23,7 +18,13 @@ async function main() {
   const c = [proof.pi_c[0], proof.pi_c[1]];
 
   try {
-    const tx = await zkValidator.verifyAndSend(a, b, c, publicSignals, {
+    // optional: callStatic first to預測是否通過驗證
+    await ZKValidator.callStatic.verifyAndSend(a, b, c, publicSignals, {
+      value: ethers.utils.parseEther("0.01"),
+    });
+    console.log("✅ callStatic 成功，交易即將送出...");
+
+    const tx = await ZKValidator.verifyAndSend(a, b, c, publicSignals, {
       value: ethers.utils.parseEther("0.01"),
     });
     await tx.wait();
@@ -34,6 +35,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error("❌ 腳本錯誤:", error);
   process.exitCode = 1;
 });
